@@ -53,19 +53,33 @@ def check_input(command: str) -> bool:
         return False
 
     return True
-    return False
 
 def get_command() -> str:
     """Prompt the user for input and return a valid command or guess."""
-    return ""
+    while True:
+        user_in = input()
+
+        if not check_input(user_in):
+            continue
+
+        if user_in in HELP_COMMAND + HINT_COMMAND + QUIT_COMMAND:
+            return user_in
+
+        nums = user_in.split(",")
+        wrappd = ",".join(f"[{n}]" for n in nums)
+
+        return wrappd
 
 def place_guess(board: list[list[str]], guess: str, row: int) -> None:
     """Place a user's guess on the board at the specified row."""
-    return None
+    parts = guess.split(",")
+    for i in range(5):
+        board[row][i] = parts[i]
 
 def place_feedback(board: list[list[str]], feedback: list[str], row: int) -> None:
     """Place feedback for a guess on the board at the specified row."""
-    return None
+    for i range(5):
+        board[row][5 + i] = feedback[i]
 
 def provide_feedback(key: list[str], guess: str) -> list[str]:
     """Generate feedback for a guess compared to the secret key."""
