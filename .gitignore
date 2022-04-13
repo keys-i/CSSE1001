@@ -1,0 +1,6 @@
+.idea/
+
+__pycache__
+
+# OS-Specific files
+.DS_Store
