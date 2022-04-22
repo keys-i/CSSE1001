@@ -1,6 +1,6 @@
 # CSSE1001 Assignments
 
-These are my assignments for CSSE1001 at UQ, Semester 1 2025
+These are my assignments for CSSE1001 at UQ, Semester 1 2022
 
 This repo should be used only as a reference.
 
@@ -18,6 +18,17 @@ This repo should be used only as a reference.
 python3 A1/a1.py
 ```
 
+It can also be used as a module:
+```bash
+python3
+>>> from A1 import a1
+>>> a1.play_game()
+```
+This can also be used to inspect the functions in the module.
+
+You can quit the game in two ways:
+either use the `q` command or answer `n` to quit, or simply use Ctrl-C to
+quit.
 
 ## License
 see my License at [License](LICENSE)
