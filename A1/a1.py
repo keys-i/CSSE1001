@@ -6,6 +6,8 @@ from support import *
 # Favorite Marsupial: Quokka
 # -----------------------------------------------------------------------------
 
+CMD_STR = HELP_COMMAND + QUIT_COMMAND + HINT_COMMAND
+
 
 # Write your classes and functions here
 def num_hours() -> float:
@@ -14,39 +16,69 @@ def num_hours() -> float:
 
 
 def generate_initial_board(board_size: int) -> list[list[str]]:
-    """Generate the initial board structure with empty guess and feedback slots."""
+    """
+    Generates an initial empty board state
+
+    Parameter:
+        board_size (int): The number of rows in the generated board.
+                          Precondition: board_size > 0
+
+    Returns:
+        (list[list[str]]): The empty board
+    """
     board = []
     for _ in range(board_size):
-        row = [EMPTY_GUESS] * 5 + [EMPTY_FEEDBACK] * 5
+        row = [EMPTY_GUESS] * NUM_NUMBERS + [EMPTY_FEEDBACK] * NUM_NUMBERS
         board.append(row)
     return board
 
 
 def display_board(board: list[list[str]]) -> None:
-    """Display the current game board showing guesses and feedback."""
+    """
+    Displays the given game board state to the user in a pleasant format
+
+    Parameters:
+        board (list[list[str]]): Board state to display. Precondition: each row
+        of board will have 2*NUM_NUMBERS elements, and len(board) < 100.
+    """
     for i, row in enumerate(board, 1):
-        guess = " ".join(row[0:5])
-        feedback = " ".join(row[5:10])
+        guess = " ".join(row[:NUM_NUMBERS])
+        feedback = " ".join(row[NUM_NUMBERS:])
         print(f"{i:2} {guess}{BOARD_HALVES_SEP}{feedback}")
     print(*BOARD_FOOTER)
 
 
 def display_key(key: list[str], used_hints: int) -> None:
-    """Display the current state of the secret key with hints revealed."""
-    revealed = key[:used_hints]
-    hidden = ["?"] * (len(key) - used_hints)
-    slots = revealed + hidden
+    """
+    Displays to the user the key that has been revealed to them through hints
+
+    Parameters:
+        key (list[str]): The secret key
+        used_hints (int): The number of hints the user has received so far.
+                            Precondition: used_hints >= 0
+    """
+    hidden_key = [HIDDEN_NUMBER] * len(key)
+    slots = key[:used_hints] + hidden_key[used_hints:]
     print(f"Key: {'  '.join(slots)}")
 
 
 def check_input(command: str) -> bool:
-    """Validate the user's input format and values."""
+    """
+    Checks if a given string is a valid mastermind command.
+    Prints an explanatory message to the user if entered command is invalid.
+
+    Parameters:
+        command (str): Command to check
+
+    Returns:
+        bool: Whether the given command is valid or not.
+    """
     cmd = command.lower()
-    if cmd in HELP_COMMAND + QUIT_COMMAND + HINT_COMMAND:
+    if cmd in CMD_STR:
         return True
 
     parts = command.split(",")
-    if len(parts) != 5:
+    if len(parts) != NUM_NUMBERS:
         print(INVALID_FORMAT_MESSAGE)
         return False
 
@@ -59,7 +91,15 @@ def check_input(command: str) -> bool:
 
 
 def get_command() -> str:
-    """Prompt the user for input and return a valid command or guess."""
+    """
+    Repeatedly prompts the user until they enter a valid command,
+    and returns the key corresponding to their guess (or the special
+    command entered)
+
+    Returns:
+    (str): The valid input command if a special command is entered,
+            otherwise the key specified by the user.
+    """
     while True:
         user_in = input()
 
@@ -76,49 +116,75 @@ def get_command() -> str:
 
 
 def place_guess(board: list[list[str]], guess: str, row: int) -> None:
-    """Place a user's guess on the board at the specified row."""
+    """
+    Places a given key onto the guess half of the given board state
+
+    Parameters:
+        board (list[list[str]]): Board state.
+        guess (str): Guessed key. Precondition: guess is well formatted
+            and valid.
+        row (int): Row of board state to insert guess. Precondition: row is a
+                    valid index.
+    """
     parts = guess.split(",")
-    for i in range(5):
+    for i in range(NUM_NUMBERS):
         board[row][i] = parts[i]
 
 
 def place_feedback(board: list[list[str]], feedback: list[str], row: int) -> None:
     """
-    Place feedback for a guess on the board at the specified row.
+    Places feedback into the feedback half of the given board state.
 
-    'B' indicates correct number in correct place.
-    'W' indicates correct number in wrong place.
+    Parameters:
+        board (list[list[str]]): Board state.
+        feedback (list[str]): Given feedback. Precondition: Feedback is not
+                                longer than the availible space.
+        row (int): Row of board state to insert feedback. Precondition: row is
+                    a valid index.
     """
     for i in range(5):
         board[row][5 + i] = feedback[i]
 
 
 def provide_feedback(key: list[str], guess: str) -> list[str]:
-    """Generate feedback for a guess compared to the secret key."""
+    """
+    Provide feedback on users guess according to the game rules.
+
+    Parameters:
+        key (list[str]): The secret key.
+        guess (str): The user's guess. Precondition: guess is a comma separated
+                        string.
+
+    Returns:
+        list[str]: Feedback on guess, consisting of a number of blacks ('B')
+                    (Guess contains a correct number in the correct position),
+                    and whites ('W') (Guess contains a further correct number,
+                    but in the incorrect position).
+    """
     guess_nums = [g[1:-1] for g in guess.split(",")]
     key_nums = [k[1:-1] for k in key]
 
     feedback: list[str] = []
 
     # working copies so we can mark used positions
-    temp_key = key_nums[:]
-    temp_guess = guess_nums[:]
+    temp_key: list[str | None] = list(key_nums)
+    temp_guess: list[str | None] = list(guess_nums)
 
     # first pass: exact matches (B)
-    for i in range(5):
+    for i in range(NUM_NUMBERS):
         if temp_guess[i] == temp_key[i]:
-            feedback.append("B")
+            feedback.append(BLACK)
             temp_guess[i] = None
             temp_key[i] = None
 
     # second pass: correct number, wrong place (W)
-    for i in range(5):
+    for i in range(NUM_NUMBERS):
         if temp_guess[i] is not None and temp_guess[i] in temp_key:
-            feedback.append("W")
+            feedback.append(WHITE)
             temp_key[temp_key.index(temp_guess[i])] = None
 
     # pad to 5 positions so place_feedback can always index 0..4
-    while len(feedback) < 5:
+    while len(feedback) < NUM_NUMBERS:
         feedback.append(EMPTY_FEEDBACK)
 
     return feedback
@@ -127,12 +193,12 @@ def provide_feedback(key: list[str], guess: str) -> list[str]:
 MAX_ROWS = 10
 MAX_HINTS = 3
 MIN_GUESSES_FOR_HINT = 3
-WIN_FEEDBACK = ["B"] * 5
+WIN_FEEDBACK = [BLACK] * NUM_NUMBERS
 
 
 def play_game() -> None:
     """
-    Run a full session of the mastermind game
+    Plays a single game of Mastermind from start to finish.
     """
     board = generate_initial_board(MAX_ROWS)
     secret_key = generate_key()
@@ -205,7 +271,7 @@ def main() -> None:
     while True:
         play_game()
         retry: str = input(RETRY_MESSAGE).strip().lower()
-        if retry == "n":
+        if retry.lower() != "y":
             break
 
 
