@@ -1,5 +1,27 @@
 # DO NOT modify or add any import statements
-from support import *
+from support import (
+    BLACK,
+    BOARD_FOOTER,
+    BOARD_HALVES_SEP,
+    EMPTY_FEEDBACK,
+    EMPTY_GUESS,
+    ENTER_COMMAND_MESSAGE,
+    HELP_COMMAND,
+    HELP_MESSAGE,
+    HIDDEN_NUMBER,
+    HINT_COMMAND,
+    HINT_EARLY_MESSAGE,
+    HINT_MESSAGE,
+    INVALID_FORMAT_MESSAGE,
+    INVALID_NUMBER_MESSAGE,
+    LOST_MESSAGE,
+    NUM_NUMBERS,
+    QUIT_COMMAND,
+    RETRY_MESSAGE,
+    WHITE,
+    WIN_MESSAGE,
+    generate_key,
+)
 
 # Name: Radhesh Goel
 # Student Number: 49088276
