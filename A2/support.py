@@ -1,4 +1,5 @@
 from random import choice, seed
+
 seed(7030)
 from typing import Optional
 
@@ -46,8 +47,7 @@ LOAD_COMMAND = "load"
 COMMAND_PROMPT = "Please enter command (or Help to see valid commands): "
 HARDPOINT_PROMPT = "Please enter target hardpoint number: "
 
-INVALID_COMMAND = ("Invalid command! Enter 'Help' to see a list of valid"
-                   " commands.")
+INVALID_COMMAND = "Invalid command! Enter 'Help' to see a list of valid" " commands."
 INVALID_HARDPOINT = "Invalid target."
 INVALID_INT = "Please enter an integer."
 
@@ -60,16 +60,18 @@ CORRUPT_HARDPOINT_COUNT = "Ship cannot have 0 hardpoints"
 CORRPUT_HARDPOINT = "Invalid hardpoint"
 CORRUPT_ENEMY_COUNT = "Cannot have 0 enemies"
 
-HELP_MESSAGES = ["Commands:",
-                 "  - Help: See possible commands.", 
-                 "  - Check deck: List cards in deck, with their cooldowns.",
-                 "  - Play card X: Plays Card at position X in hand.",
-                 "  - End turn: end your turn and let the enemy move."
-                 ] 
+HELP_MESSAGES = [
+    "Commands:",
+    "  - Help: See possible commands.",
+    "  - Check deck: List cards in deck, with their cooldowns.",
+    "  - Play card X: Plays Card at position X in hand.",
+    "  - End turn: end your turn and let the enemy move.",
+]
 
 MAX_HAND = 5
 
 SAVE_LOC = "autosave.txt"
+
 
 def shuffle_cards(card_list: list["Card"]):
     """
@@ -96,16 +98,16 @@ def shuffle_cards(card_list: list["Card"]):
             # Check for ailiasing to prevent nasty bugs later on
             if any(card is curr_card for card in to_choose[curr_name]):
                 raise ValueError(
-                    "You have multiple references to the same card." + 
-                    " Please ensure each card is being created "
+                    "You have multiple references to the same card."
+                    + " Please ensure each card is being created "
                     "as a new instance."
                 )
-            
+
             else:
                 to_choose[curr_name].append(curr_card)
-    
-    card_types.sort() # ensure consistency regardless of initial card order
-    
+
+    card_types.sort()  # ensure consistency regardless of initial card order
+
     # Replace cards in a random order
     while to_choose:
         key = choice(card_types)
@@ -114,5 +116,5 @@ def shuffle_cards(card_list: list["Card"]):
         if not to_choose[key]:
             to_choose.pop(key)
             card_types.remove(key)
-        
+
         card_list.append(new_card)

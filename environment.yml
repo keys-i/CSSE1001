@@ -1,14 +1,14 @@
 # ------------------------------------------------------------------------------
-# Project: Mastermind
-# Description: A basic python implementation of the mastermind game
+# Project: CSSE1001
+# Description: My CSSE1001 assignments written in python
 # Maintainer: Radhesh Goel (Keys-I)
-# Created: 2023-05-12
+# Created: 2022-05-12
 # Python: 3.10
 # Notes:
 # - Keep versions loosely pinned unless you need strict reproducibility.
 # - Use `conda env export --from-history` to capture only explicit deps later.
 # ------------------------------------------------------------------------------
-name: mastermind
+name: csse1001
 
 channels:
   - conda-forge
@@ -17,3 +17,4 @@ dependencies:
   - python=3.10
   - pip
   - pip:
+      - black

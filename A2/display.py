@@ -3,30 +3,36 @@ from support import *
 
 # Display helper components, you can ignore these until BreachView
 
+
 class DisplayError(Exception):
     """
     Custom error so as not to trip excepts
     """
+
     pass
 
-class TextDisplayElement():
+
+class TextDisplayElement:
     """
     A class to represent and format a block of text content with specified
     dimensions and horizontal/vertical justification. The text content can be
     justified to the top, bottom, or center vertically, and to the left, right,
     or center horizontally.
     """
+
     VJUST_TOP = "top"
     VJUST_BOTTOM = "bottom"
-    VJUST_CENTER = "center" #if unequal sides left
+    VJUST_CENTER = "center"  # if unequal sides left
     HJUST_LEFT = "left"
     HJUST_RIGHT = "right"
-    HJUST_CENTER = VJUST_CENTER # if unequal sides top
-    def __init__(self, 
-                 width: Optional[int] = None, 
-                 height: Optional[int] = None,
-                 vjust: str = VJUST_CENTER,
-                 hjust: str = HJUST_CENTER
+    HJUST_CENTER = VJUST_CENTER  # if unequal sides top
+
+    def __init__(
+        self,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        vjust: str = VJUST_CENTER,
+        hjust: str = HJUST_CENTER,
     ) -> None:
         """
         Initializes a TextDisplayElement with optional fixed width and height,
@@ -44,17 +50,19 @@ class TextDisplayElement():
         self._fixheight = height
 
         if vjust not in (self.VJUST_TOP, self.VJUST_CENTER, self.VJUST_BOTTOM):
-            raise DisplayError("invalid vertical justification, please use "+ 
-                             f"'{self.VJUST_TOP}', " +
-                             f"'{self.VJUST_CENTER}', or " +
-                             f"'{self.VJUST_BOTTOM}'"
+            raise DisplayError(
+                "invalid vertical justification, please use "
+                + f"'{self.VJUST_TOP}', "
+                + f"'{self.VJUST_CENTER}', or "
+                + f"'{self.VJUST_BOTTOM}'"
             )
-        
+
         if hjust not in (self.HJUST_LEFT, self.HJUST_CENTER, self.HJUST_RIGHT):
-            raise DisplayError("invalid horizontal justification, please use "+ 
-                             f"'{self.HJUST_LEFT}', " +
-                             f"'{self.HJUST_CENTER}', or " +
-                             f"'{self.HJUST_RIGHT}'"
+            raise DisplayError(
+                "invalid horizontal justification, please use "
+                + f"'{self.HJUST_LEFT}', "
+                + f"'{self.HJUST_CENTER}', or "
+                + f"'{self.HJUST_RIGHT}'"
             )
         self._vjust = vjust
         self._hjust = hjust
@@ -75,8 +83,8 @@ class TextDisplayElement():
         if self._fixwidth:
             return self._fixwidth
         else:
-            return max((len(row) for row in self._content), default= 0)
-    
+            return max((len(row) for row in self._content), default=0)
+
     def set_height(self, height: Optional[int] = None):
         """
         Sets a new fixed height for the content display.
@@ -91,7 +99,7 @@ class TextDisplayElement():
             return self._fixheight
         else:
             return len(self._content)
-    
+
     def justify(self, content: list[str]) -> list[str]:
         """
         Applies horizontal and vertical justification to the provided content.
@@ -129,35 +137,40 @@ class TextDisplayElement():
         elif self._vjust == self.VJUST_CENTER:
             tpad = vdiff // 2
             bpad = vdiff - tpad
-            to_render = ([" " * self.get_width()] * tpad) + \
-                    to_render + \
-                    ([" " * self.get_width()] * bpad)
-        
+            to_render = (
+                ([" " * self.get_width()] * tpad)
+                + to_render
+                + ([" " * self.get_width()] * bpad)
+            )
+
         return to_render
-        
+
     def render(self) -> list[str]:
         """
         Returns the internally stored content with justification applied.
         """
         return self.justify(self._content)
-    
+
     def display(self):
         """
         Display the rendered and justified content to the standard output.
         """
         print("\n".join(self.render()))
 
+
 class BaseDisplay(TextDisplayElement):
     """
     A Display that adds support for setting and wrapping text content on top
     of TextDisplayElement.
     """
-    def __init__(self,
-                 content: Optional[list[str]] = None, 
-                 width: Optional[int] = None, 
-                 height: Optional[int] = None, 
-                 vjust: str = TextDisplayElement.VJUST_CENTER, 
-                 hjust: str = TextDisplayElement.HJUST_CENTER
+
+    def __init__(
+        self,
+        content: Optional[list[str]] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        vjust: str = TextDisplayElement.VJUST_CENTER,
+        hjust: str = TextDisplayElement.HJUST_CENTER,
     ) -> None:
         """
         Initializes a BaseDisplay object with optional content, dimensions, and
@@ -198,24 +211,27 @@ class BaseDisplay(TextDisplayElement):
             # find space to break on
             space = remaining.rfind(" ", 0, self.get_width())
             wrapped.append(remaining[0:space])
-            remaining = remaining[space+1:]
+            remaining = remaining[space + 1 :]
             if space == -1:
-                break # give up and deal with consequences later
+                break  # give up and deal with consequences later
 
         wrapped.append(remaining)
         return wrapped
+
 
 class VSplitDisplay(TextDisplayElement):
     """
     A composite display element that stacks multiple TextDisplayElement
     components vertically from top to bottom.
     """
-    def __init__(self, 
-                 components: list[TextDisplayElement],
-                 width: Optional[int] = None, 
-                 height: Optional[int] = None, 
-                 vjust: str = TextDisplayElement.VJUST_CENTER, 
-                 hjust: str = TextDisplayElement.HJUST_CENTER
+
+    def __init__(
+        self,
+        components: list[TextDisplayElement],
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        vjust: str = TextDisplayElement.VJUST_CENTER,
+        hjust: str = TextDisplayElement.HJUST_CENTER,
     ) -> None:
         """
         Initializes a VSplitDisplay instance with a list of display components
@@ -237,7 +253,7 @@ class VSplitDisplay(TextDisplayElement):
         Returns the list of child display components.
         """
         return self._components
-    
+
     def __getitem__(self, index: int) -> TextDisplayElement:
         """
         Allows indexed access to the internal list of components.
@@ -257,9 +273,10 @@ class VSplitDisplay(TextDisplayElement):
         if self._fixwidth:
             return self._fixwidth
         else:
-            return max((component.get_width()
-                        for component in self._components), default= 0)
-        
+            return max(
+                (component.get_width() for component in self._components), default=0
+            )
+
     def get_height(self) -> int:
         """
         Returns the height of the VSplitDisplay.
@@ -267,8 +284,7 @@ class VSplitDisplay(TextDisplayElement):
         if self._fixheight:
             return self._fixheight
         else:
-            return sum((component.get_height()
-                        for component in self._components))
+            return sum((component.get_height() for component in self._components))
 
     def render(self):
         """
@@ -280,17 +296,20 @@ class VSplitDisplay(TextDisplayElement):
             content_stack += component.render()
         return self.justify(content_stack)
 
+
 class HSplitDisplay(TextDisplayElement):
     """
     A composite display element that arranges multiple TextDisplayElement
     components horizontally from left to right.
     """
-    def __init__(self, 
-                 components: list[TextDisplayElement],
-                 width: Optional[int] = None, 
-                 height: Optional[int] = None, 
-                 vjust: str = TextDisplayElement.VJUST_CENTER, 
-                 hjust: str = TextDisplayElement.HJUST_CENTER
+
+    def __init__(
+        self,
+        components: list[TextDisplayElement],
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        vjust: str = TextDisplayElement.VJUST_CENTER,
+        hjust: str = TextDisplayElement.HJUST_CENTER,
     ) -> None:
         """
         Initializes an HSplitDisplay with the given components and optional
@@ -312,7 +331,7 @@ class HSplitDisplay(TextDisplayElement):
         Returns the list of child display components.
         """
         return self._components
-    
+
     def __getitem__(self, index: int) -> TextDisplayElement:
         """
         Allows indexed access to the internal list of components.
@@ -324,17 +343,16 @@ class HSplitDisplay(TextDisplayElement):
             TextDisplayElement: The component at the specified index.
         """
         return self._components[index]
-    
+
     def get_width(self) -> int:
         """
-                Returns the width of the VSplitDisplay.
-                """
+        Returns the width of the VSplitDisplay.
+        """
         if self._fixwidth:
             return self._fixwidth
         else:
-            return sum((component.get_width()
-                        for component in self._components))
-        
+            return sum((component.get_width() for component in self._components))
+
     def get_height(self) -> int:
         """
         Returns the height of the VSplitDisplay.
@@ -342,8 +360,9 @@ class HSplitDisplay(TextDisplayElement):
         if self._fixheight:
             return self._fixheight
         else:
-            return max((component.get_height()
-                        for component in self._components), default= 0)
+            return max(
+                (component.get_height() for component in self._components), default=0
+            )
 
     def render(self):
         """
@@ -361,20 +380,22 @@ class HSplitDisplay(TextDisplayElement):
             if self._vjust == self.VJUST_TOP:
                 new_content += [" " * component.get_width()] * vdiff
             elif self._vjust == self.VJUST_BOTTOM:
-                new_content = ([" " * component.get_width()] * vdiff
-                               + new_content)
+                new_content = [" " * component.get_width()] * vdiff + new_content
             elif self._vjust == self.VJUST_CENTER:
                 tpad = vdiff // 2
                 bpad = vdiff - tpad
-                new_content = [" " * component.get_width()] * tpad + \
-                        new_content + \
-                        [" " * component.get_width()] * bpad
-            
-            #stitch lines together
+                new_content = (
+                    [" " * component.get_width()] * tpad
+                    + new_content
+                    + [" " * component.get_width()] * bpad
+                )
+
+            # stitch lines together
             for line in range(self.get_height()):
                 to_render[line] += new_content[line]
 
         return self.justify(to_render)
+
 
 class AbstractGrid(VSplitDisplay):
     """
@@ -385,14 +406,17 @@ class AbstractGrid(VSplitDisplay):
         - 'square': each cell has equal width and height
         - 'stretch': each cell stretches to fill available space
     """
+
     GRID_SQUARE = "square"
     GRID_STRETCH = "stretch"
     _FIXED_GEO_ERR = DisplayError("Grid must have fixed geometry")
-    def __init__(self, 
-                 dims: tuple[int, int], #row col
-                 width: int, 
-                 height: int, 
-                 just: str = GRID_SQUARE
+
+    def __init__(
+        self,
+        dims: tuple[int, int],  # row col
+        width: int,
+        height: int,
+        just: str = GRID_SQUARE,
     ) -> None:
         """
         Initializes an AbstractGrid with fixed dimensions and layout mode.
@@ -405,13 +429,14 @@ class AbstractGrid(VSplitDisplay):
         """
         if not width and height:
             raise self._FIXED_GEO_ERR
-        
+
         super().__init__([], width, height)
-        
+
         if just not in (self.GRID_SQUARE, self.GRID_STRETCH):
-            raise DisplayError("invalid grid justification, please use "+ 
-                             f"'{self.GRID_SQUARE}', or" +
-                             f"'{self.GRID_STRETCH}'"
+            raise DisplayError(
+                "invalid grid justification, please use "
+                + f"'{self.GRID_SQUARE}', or"
+                + f"'{self.GRID_STRETCH}'"
             )
         self._grid_just = just
         self.set_dims(dims)
@@ -423,8 +448,8 @@ class AbstractGrid(VSplitDisplay):
         if not width:
             raise self._FIXED_GEO_ERR
         super().set_width(width)
-        self.set_dims(self._dims) # Reconstruct grid with new geometry
-    
+        self.set_dims(self._dims)  # Reconstruct grid with new geometry
+
     def set_height(self, height: int):
         """
         Sets a new fixed height for the grid.
@@ -432,7 +457,7 @@ class AbstractGrid(VSplitDisplay):
         if not height:
             raise self._FIXED_GEO_ERR
         super().set_height(height)
-        self.set_dims(self._dims) # Reconstruct grid with new geometry
+        self.set_dims(self._dims)  # Reconstruct grid with new geometry
 
     def get_dims(self) -> tuple[int, int]:
         """
@@ -457,11 +482,14 @@ class AbstractGrid(VSplitDisplay):
                 cell_height = min_dim
                 cell_width = min_dim
 
-            row_components = [BaseDisplay(width=cell_width, height=cell_height)
-                              for _ in range(dims[1])]
-            self.components().append(HSplitDisplay(row_components, 
-                                                   width=self.get_width(), 
-                                                   height = cell_height)
+            row_components = [
+                BaseDisplay(width=cell_width, height=cell_height)
+                for _ in range(dims[1])
+            ]
+            self.components().append(
+                HSplitDisplay(
+                    row_components, width=self.get_width(), height=cell_height
+                )
             )
 
     def get_cell(self, row: int, col: int):
@@ -469,6 +497,7 @@ class AbstractGrid(VSplitDisplay):
         Returns the display element at a specific cell in the grid.
         """
         return self[row][col]
+
 
 BREACH_WIDTH = 80
 DIVIDER = "-" * BREACH_WIDTH
@@ -481,12 +510,14 @@ SG_DISPLAY = "*"
 DESTROYED_DISPLAY = "X"
 RECHARGING_DISPLAY = "+"
 
+
 class ShipDisplay(AbstractGrid):
     """
     A visual representation of a ship composed of hardpoints and fixed ship
     components.
     """
-    NOSE = [" ^ ","/ \\","|-|"]
+
+    NOSE = [" ^ ", "/ \\", "|-|"]
     LFIN = ["  /", " / ", "/M-"]
     RFIN = ["\\  ", " \\ ", "-M\\"]
     BASE = ["| |", "|^|", "M|M"]
@@ -499,7 +530,7 @@ class ShipDisplay(AbstractGrid):
         LL_SYMBOL: LL_DISPLAY,
         HL_SYMBOL: HL_DISPLAY,
         SG_SYMBOL: SG_DISPLAY,
-        RECHARGING_SYMBOL: RECHARGING_DISPLAY
+        RECHARGING_SYMBOL: RECHARGING_DISPLAY,
     }
 
     def __init__(self, hardpoints: list["Hardpoint"] = None) -> None:
@@ -510,18 +541,19 @@ class ShipDisplay(AbstractGrid):
             hardpoints (list[Hardpoint]): A list of Hardpoint objects to be
                 displayed.
         """
-        super().__init__((1,3), width = self.SHIP_CELL_SIZE *
-                                        self.SHIP_CELLS_WIDE, height=1)
+        super().__init__(
+            (1, 3), width=self.SHIP_CELL_SIZE * self.SHIP_CELLS_WIDE, height=1
+        )
         if hardpoints:
             self.set_ship(hardpoints)
 
-    def set_ship(self, hardpoints = list["Hardpoint"]) -> None:
+    def set_ship(self, hardpoints=list["Hardpoint"]) -> None:
         """
         Configures the ship display with the given hardpoints.
         """
         # Set dims and geometry
-        self.set_dims((len(hardpoints)+2, self.SHIP_CELLS_WIDE))
-        self.set_height(self.SHIP_CELL_SIZE * (len(hardpoints)+2))
+        self.set_dims((len(hardpoints) + 2, self.SHIP_CELLS_WIDE))
+        self.set_height(self.SHIP_CELL_SIZE * (len(hardpoints) + 2))
 
         # Draw fixed ends
         self[0][1].set_content(self.NOSE)
@@ -531,24 +563,27 @@ class ShipDisplay(AbstractGrid):
 
         # Draw hardpoints
         for i, hardpoint in enumerate(hardpoints):
-            pos = i+1
+            pos = i + 1
             if hardpoint.is_functional():
                 display = self.DISPLAY_MAP[str(hardpoint)]
-            else: 
+            else:
                 display = DESTROYED_DISPLAY
             # Hardpoint + health
             self[pos][1].set_content(
-                    ["| |",f"|{display}|",f"|{hardpoint.get_armour()}|"]
+                ["| |", f"|{display}|", f"|{hardpoint.get_armour()}|"]
             )
             # Position
             self[pos][0].set_content(f"{pos}")
+
 
 class StatBar(HSplitDisplay):
     """
     A horizontal bar display for showing player and enemy ship statistics.
     """
+
     STAT_HEIGHT = 2
     REACTOR_STRING = "Reactor Energy Available"
+
     def __init__(self, width: int) -> None:
         """
         Initializes the stat bar layout with the specified width.
@@ -559,46 +594,47 @@ class StatBar(HSplitDisplay):
         super().__init__(
             [
                 BaseDisplay(
-                    width = ShipDisplay.SHIP_CELLS_WIDE
-                            * ShipDisplay.SHIP_CELL_SIZE,
-                    height = self.STAT_HEIGHT, 
-                    vjust = TextDisplayElement.VJUST_BOTTOM,
+                    width=ShipDisplay.SHIP_CELLS_WIDE * ShipDisplay.SHIP_CELL_SIZE,
+                    height=self.STAT_HEIGHT,
+                    vjust=TextDisplayElement.VJUST_BOTTOM,
                 ),
                 BaseDisplay(
                     ["|"] * self.STAT_HEIGHT,
-                    width = 1,
-                    height = self.STAT_HEIGHT,
+                    width=1,
+                    height=self.STAT_HEIGHT,
                 ),
                 BaseDisplay(
-                    width = ShipDisplay.SHIP_CELLS_WIDE
-                            * ShipDisplay.SHIP_CELL_SIZE,
-                    height = self.STAT_HEIGHT, 
-                    vjust = TextDisplayElement.VJUST_BOTTOM
+                    width=ShipDisplay.SHIP_CELLS_WIDE * ShipDisplay.SHIP_CELL_SIZE,
+                    height=self.STAT_HEIGHT,
+                    vjust=TextDisplayElement.VJUST_BOTTOM,
                 ),
                 BaseDisplay(
-                    height = self.STAT_HEIGHT,
-                    width =  width - (2*(ShipDisplay.SHIP_CELLS_WIDE
-                                         * ShipDisplay.SHIP_CELL_SIZE) +1),
-                    vjust = TextDisplayElement.VJUST_BOTTOM,
-                    hjust = TextDisplayElement.HJUST_RIGHT
+                    height=self.STAT_HEIGHT,
+                    width=width
+                    - (
+                        2 * (ShipDisplay.SHIP_CELLS_WIDE * ShipDisplay.SHIP_CELL_SIZE)
+                        + 1
+                    ),
+                    vjust=TextDisplayElement.VJUST_BOTTOM,
+                    hjust=TextDisplayElement.HJUST_RIGHT,
                 ),
             ],
-            width=width, 
-            height=self.STAT_HEIGHT, 
-            vjust = TextDisplayElement.VJUST_BOTTOM,
+            width=width,
+            height=self.STAT_HEIGHT,
+            vjust=TextDisplayElement.VJUST_BOTTOM,
             hjust=TextDisplayElement.HJUST_LEFT,
         )
-    
+
     def display_stats(
-            self, 
-            player_armour: int, 
-            player_shield: int,
-            player_heat: int, 
-            player_energy: int, 
-            enemy_armour: int, 
-            enemy_shield: int, 
-            enemy_heat: int
-        ) -> None:
+        self,
+        player_armour: int,
+        player_shield: int,
+        player_heat: int,
+        player_energy: int,
+        enemy_armour: int,
+        enemy_shield: int,
+        enemy_heat: int,
+    ) -> None:
         """
         Populates the stat bar with values for both the player and the enemy,
         and displays the player's available reactor energy.
@@ -614,26 +650,23 @@ class StatBar(HSplitDisplay):
         """
 
         # Display Player ship stats:
-        self[0].set_content([
-            f"A:{player_armour}", 
-            f"S:{player_shield} H:{player_heat}"])
-        
+        self[0].set_content(
+            [f"A:{player_armour}", f"S:{player_shield} H:{player_heat}"]
+        )
+
         # Display enemy ship stats:
-        self[2].set_content([
-            f"A:{enemy_armour}", 
-            f"S:{enemy_shield} H:{enemy_heat}"])
-        
+        self[2].set_content([f"A:{enemy_armour}", f"S:{enemy_shield} H:{enemy_heat}"])
+
         # Display energy
-        self[3].set_content([
-            self.REACTOR_STRING, str(player_energy)
-        ])
+        self[3].set_content([self.REACTOR_STRING, str(player_energy)])
+
 
 class EncounterDisplay(VSplitDisplay):
     """
     Displays the full combat encounter UI including player and enemy ships,
     a vertical divider, enemy intents, and combat statistics.
     """
-    
+
     def __init__(self, width: int) -> None:
         """
         Initializes the encounter layout with a given width.
@@ -644,13 +677,17 @@ class EncounterDisplay(VSplitDisplay):
         """
         ships = HSplitDisplay(
             [ShipDisplay(), BaseDisplay(), ShipDisplay(), VSplitDisplay([])],
-            width=width, vjust = TextDisplayElement.VJUST_BOTTOM,
-            hjust= TextDisplayElement.HJUST_LEFT
+            width=width,
+            vjust=TextDisplayElement.VJUST_BOTTOM,
+            hjust=TextDisplayElement.HJUST_LEFT,
         )
         stats = StatBar(width)
-        super().__init__([ships,BaseDisplay([DIVIDER]),stats],
-            width = width, vjust = TextDisplayElement.VJUST_BOTTOM)
-        
+        super().__init__(
+            [ships, BaseDisplay([DIVIDER]), stats],
+            width=width,
+            vjust=TextDisplayElement.VJUST_BOTTOM,
+        )
+
     def display_ships(self, player: "Ship", enemy: "Ship"):
         """
         Updates the display with information from the given player and enemy
@@ -668,21 +705,19 @@ class EncounterDisplay(VSplitDisplay):
         self[0][2].set_ship([intent[0] for intent in e_intents])
         self[0][3].components().clear()
         # Buffer for nose cone
-        self[0][3].components().append(
-            BaseDisplay(height=ShipDisplay.SHIP_CELL_SIZE))
+        self[0][3].components().append(BaseDisplay(height=ShipDisplay.SHIP_CELL_SIZE))
 
         for intent in e_intents:
             self[0][3].components().append(
-                BaseDisplay(
-                    [intent[1]], height=ShipDisplay.SHIP_CELL_SIZE
-                )
+                BaseDisplay([intent[1]], height=ShipDisplay.SHIP_CELL_SIZE)
             )
         self[0][3].components().append(
-            BaseDisplay(height=ShipDisplay.SHIP_CELL_SIZE)) # Buffer for Base
+            BaseDisplay(height=ShipDisplay.SHIP_CELL_SIZE)
+        )  # Buffer for Base
 
         # Display Divider
-        self[0][1].set_content([]) # to not mess with get_height
-        self[0][1].set_content(["|"]* self.get_height())
+        self[0][1].set_content([])  # to not mess with get_height
+        self[0][1].set_content(["|"] * self.get_height())
 
         # Display stats
         self[2].display_stats(
@@ -692,14 +727,16 @@ class EncounterDisplay(VSplitDisplay):
             player.get_energy(),
             enemy.get_armour(),
             enemy.get_shield(),
-            enemy.get_heat()
+            enemy.get_heat(),
         )
+
 
 class CardDisplay(VSplitDisplay):
     """
     A visual representation of a card with borders, number identifier,
     and internal content such as name, description, cost, and cooldown.
     """
+
     CARD_WIDTH = 12
     CARD_HEIGHT = 10
     CARD_HBORDER = ["+" + ("-" * CARD_WIDTH) + "+"]
@@ -713,44 +750,31 @@ class CardDisplay(VSplitDisplay):
             padding (int): Extra horizontal padding added to the right of the
                 card for layout alignment.
         """
-        super().__init__([
-            BaseDisplay(
-                [], 
-                width = self.CARD_WIDTH + 2,
-                height = 1    
-            ),
-            BaseDisplay(
-                self.CARD_HBORDER, 
-                width = self.CARD_WIDTH + 2,
-                height = 1    
-            ),
-            HSplitDisplay([
-                BaseDisplay(
-                    self.CARD_VBORDER, 
-                    width = 1,
-                    height = self.CARD_HEIGHT   
+        super().__init__(
+            [
+                BaseDisplay([], width=self.CARD_WIDTH + 2, height=1),
+                BaseDisplay(self.CARD_HBORDER, width=self.CARD_WIDTH + 2, height=1),
+                HSplitDisplay(
+                    [
+                        BaseDisplay(
+                            self.CARD_VBORDER, width=1, height=self.CARD_HEIGHT
+                        ),
+                        BaseDisplay(
+                            width=self.CARD_WIDTH,
+                            height=self.CARD_HEIGHT,
+                            vjust=CardDisplay.VJUST_TOP,
+                        ),
+                        BaseDisplay(
+                            self.CARD_VBORDER, width=1, height=self.CARD_HEIGHT
+                        ),
+                    ]
                 ),
-                BaseDisplay(
-                    width = self.CARD_WIDTH, 
-                    height=self.CARD_HEIGHT,
-                    vjust= CardDisplay.VJUST_TOP
-                ),
-                BaseDisplay(
-                    self.CARD_VBORDER, 
-                    width = 1,
-                    height = self.CARD_HEIGHT   
-                )  
-            ]),
-            BaseDisplay(
-                self.CARD_HBORDER, 
-                width = self.CARD_WIDTH + 2,
-                height = 1    
-            )
-        ], 
-        width = self.CARD_WIDTH + 2 + padding, 
-        height = self.CARD_HEIGHT + 3
+                BaseDisplay(self.CARD_HBORDER, width=self.CARD_WIDTH + 2, height=1),
+            ],
+            width=self.CARD_WIDTH + 2 + padding,
+            height=self.CARD_HEIGHT + 3,
         )
-        
+
     def set_card(self, card: "Card", num: int):
         """
         Populates the card display with content from a given Card object.
@@ -765,28 +789,31 @@ class CardDisplay(VSplitDisplay):
         # split name and desc
         text = str(card)
         split = text.split(": ")
-        if len(split)> 1:
+        if len(split) > 1:
             name = split[0]
             desc = ": ".join(split[1:])
-        else: #fallback in case students throw custom stuff in
+        else:  # fallback in case students throw custom stuff in
             name = ""
             desc = text
-        
-        content = [name,""]
+
+        content = [name, ""]
         content.extend(self[2][1].wrap_text(desc))
-        
+
         # Add stats to end
         content.append("")
         content.append(f"Cost: {card.get_cost()}")
         content.append(f"Cooldown: {card.get_cooldown()}")
 
         self[2][1].set_content(content)
-    
+
+
 class HandDisplay(HSplitDisplay):
     """
-        A horizontal layout for displaying a player's hand of cards.
+    A horizontal layout for displaying a player's hand of cards.
     """
+
     V_BUFFER = 5
+
     def __init__(self, width: int = None) -> None:
         """
         Initializes an empty hand display area.
@@ -795,9 +822,9 @@ class HandDisplay(HSplitDisplay):
             width (int, optional): Total width of the hand display.
         """
         super().__init__(
-            [], width=width, height = CardDisplay.CARD_HEIGHT + self.V_BUFFER
+            [], width=width, height=CardDisplay.CARD_HEIGHT + self.V_BUFFER
         )
-    
+
     def display_hand(self, hand: list["Card"]) -> None:
         """
         Populates the hand display with a list of card objects.
@@ -806,39 +833,43 @@ class HandDisplay(HSplitDisplay):
             hand (list[Card]): The list of cards to be displayed.
         """
         self.components().clear()
-        padding = (self.get_width() -
-                   ((CardDisplay.CARD_WIDTH+2) * len(hand))) // len(hand)
+        padding = (
+            self.get_width() - ((CardDisplay.CARD_WIDTH + 2) * len(hand))
+        ) // len(hand)
 
         for i, card in enumerate(hand):
             card_display = CardDisplay(padding)
-            card_display.set_card(card, i+1)
+            card_display.set_card(card, i + 1)
             self.components().append(card_display)
+
 
 class BreachView(VSplitDisplay):
     """
     View class that displays Breachway game state with structured prints.
     """
+
     def __init__(self):
         """
         Initialises a new BreachView.
         """
-        header = BaseDisplay([DIVIDER, TITLE, DIVIDER], width = BREACH_WIDTH)
+        header = BaseDisplay([DIVIDER, TITLE, DIVIDER], width=BREACH_WIDTH)
         encounter = EncounterDisplay(BREACH_WIDTH)
         hand = HandDisplay(BREACH_WIDTH)
-        message_bar = BaseDisplay([DIVIDER, DIVIDER], width = BREACH_WIDTH)
+        message_bar = BaseDisplay([DIVIDER, DIVIDER], width=BREACH_WIDTH)
 
         super().__init__(
-            [header,encounter,hand,message_bar], 
-            width=BREACH_WIDTH, 
-            vjust=BaseDisplay.VJUST_BOTTOM
+            [header, encounter, hand, message_bar],
+            width=BREACH_WIDTH,
+            vjust=BaseDisplay.VJUST_BOTTOM,
         )
 
-    def display_game(self, 
-                     player: "Player", 
-                     opponent: "Enemy", 
-                     cards: list["Card"], 
-                     messages: list[str]
-        ):
+    def display_game(
+        self,
+        player: "Player",
+        opponent: "Enemy",
+        cards: list["Card"],
+        messages: list[str],
+    ):
         """
         Updates the game display by making a new structured print.
 
@@ -846,18 +877,18 @@ class BreachView(VSplitDisplay):
             player (Player): Player ship to display.
             opponent (Enemy): Active enemy to display.
             cards (list[Card]): Players current hand.
-            messages (list[str]): Messages to communicate to the player. 
+            messages (list[str]): Messages to communicate to the player.
                                   Will be automatically wrapped as neccessary.
-                                  Messages appear in order, with the first 
-                                  message in the list appearing topmost, 
+                                  Messages appear in order, with the first
+                                  message in the list appearing topmost,
                                   and the last message in the list appearing
                                     bottommost.
         """
-        self[1].display_ships(player, opponent) # Encounter
-        self[2].display_hand(cards) # Hand
+        self[1].display_ships(player, opponent)  # Encounter
+        self[2].display_hand(cards)  # Hand
         # Wrap messages:
         wrapped = []
         for message in messages:
             wrapped += self[3].wrap_text(message)
-        self[3].set_content([DIVIDER] + wrapped + [DIVIDER]) # Message Bar
+        self[3].set_content([DIVIDER] + wrapped + [DIVIDER])  # Message Bar
         self.display()
