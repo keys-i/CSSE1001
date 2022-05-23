@@ -16,5 +16,4 @@ This repo is intended to be used **only as a reference**.
 > not be happy if they see this code (or close variants) in your submission.
 
 ## License
-
 See [LICENSE](LICENSE) for details.
