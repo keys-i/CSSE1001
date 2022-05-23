@@ -6,13 +6,20 @@ from support import (
     CARD_DESC,
     CARD_NAME,
     DAMAGE,
+    DESTROYED_INTENT,
+    HARD_POINT_SYMBOL,
     HEAT,
+    HL_SYMBOL,
     LE_DESC,
     LE_NAME,
+    LL_SYMBOL,
+    RECHARGING_INTENT,
+    RECHARGING_SYMBOL,
     RS_DESC,
     RS_NAME,
     SB_DESC,
     SB_NAME,
+    SG_SYMBOL,
     SHIELD,
 )
 
@@ -236,6 +243,180 @@ class CardDeck:
             new_cards.append((card, max(0, cooldown - 1)))
 
         self._cards = new_cards
+
+
+class HardPoint:
+    """
+    An abstract hardpoint representing a component on a ship.
+    Hardpoints hold cards, take damage, and may perform actions for enemy ships.
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialise a HardPoint with 1 armour and a SmallBlast card.
+        """
+        self._cards = [SmallBlast()]
+        self._max_health = 1
+        self._health = self._max_health
+        self._enemy_card_no = 0
+        self._symbol = HARD_POINT_SYMBOL
+
+    def __str__(self) -> str:
+        return self._symbol
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}()"
+
+    def get_cards(self) -> list[Card]:
+        """
+        Return the list of cards associated with this hardpoint.
+        """
+        return self._cards
+
+    def get_armour(self) -> int:
+        """
+        Return the current armour value of the hardpoint.
+        """
+        return self._health
+
+    def is_functional(self) -> bool:
+        """
+        Check if the hardpoint is functional (armour > 0).
+        """
+        return self._health > 0
+
+    def damage(self, damage: int) -> None:
+        """
+        Apply damage to the hardpoint.
+
+        Parameters:
+            damage (int): The amount of damage to apply.
+        """
+        self._health = max(0, min(self._health - damage, self._max_health))
+
+    def repair(self) -> None:
+        """
+        Restore the hardpoint to full armour.
+        """
+        self._health = self._max_health
+
+    def enemy_action(self) -> dict[str, int]:
+        """
+        Return the effect of the next card for enemy action.
+
+        If the hardpoint is destroyed, return an empty effect.
+
+        Returns:
+            dict[str, int]: The effect of the selected card or {} if destroyed.
+        """
+        if not self.is_functional():
+            return {}
+
+        effect = self._cards[self._enemy_card_no].get_effect()
+        self._enemy_card_no += 1
+
+        if self._enemy_card_no >= len(self._cards):
+            self._enemy_card_no = 0
+        return effect
+
+    def enemy_intent(self) -> str:
+        """
+        Return the description of the card this hardpoint would play next.
+
+        Returns:
+            str: The card's description, or DESTROYED_INTENT if destroyed.
+        """
+        if not self.is_functional():
+            return DESTROYED_INTENT
+        else:
+            return str(self._cards[self._enemy_card_no])
+
+
+class LightLaser(HardPoint):
+    """
+    A fast-firing weapon hardpoint.
+
+    LightLaser hardpoints have 1 armour and are represented by 'L'.
+    They cycle through 3 SmallBlast cards and 1 BigBlast card.
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialise a LightLaser with 1 armour and 4 attack cards.
+        """
+        super().__init__()
+        self._cards = [SmallBlast(), SmallBlast(), SmallBlast(), BigBlast()]
+        self._symbol = LL_SYMBOL
+
+
+class ShieldGenerator(HardPoint):
+    """
+    A defensive hardpoint that boosts shields and applies heat.
+
+    ShieldGenerator hardpoints have 2 armour and are represented by 'S'.
+    They cycle through 2 RaiseShield cards and 1 LeechEnergy card.
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialise a ShieldGenerator with 2 armour and defensive cards.
+        """
+        super().__init__()
+        self._cards = [RaiseShield(), RaiseShield(), LeechEnergy()]
+        self._max_health = 2
+        self._health = self._max_health
+        self._symbol = SG_SYMBOL
+
+
+class HeavyLaser(HardPoint):
+    """
+    A high-damage hardpoint that alternates between firing and recharging.
+
+    HeavyLaser hardpoints have 3 armour and are represented by 'H' when firing
+    and 'R' when recharging. They alternate between firing BigBlast cards and
+    skipping a turn to recharge.
+    """
+
+    def __init__(self, can_fire) -> None:
+        """
+        Initialise a HeavyLaser with 3 armour and two BigBlast cards.
+
+        Parameters:
+            can_fire (bool): Whether the hardpoint can fire on its next action.
+        """
+        super().__init__()
+        self._cards = [BigBlast(), BigBlast()]
+        self._max_health = 3
+        self._health = self._max_health
+        self._can_fire = can_fire
+        self._symbol = HL_SYMBOL
+
+    def __str__(self) -> str:
+        if self._can_fire:
+            return super().__str__()
+        else:
+            return RECHARGING_SYMBOL
+
+    def __repr__(self) -> str:
+        return super().__repr__()[:-1] + f"{self._can_fire})"
+
+    def enemy_intent(self) -> str:
+        if not self.is_functional():
+            return DESTROYED_INTENT
+        elif not self._can_fire:
+            return RECHARGING_INTENT
+        else:
+            return super().enemy_intent()
+
+    def enemy_action(self) -> dict[str, int]:
+        if not self.is_functional():
+            return {}
+        if self._can_fire:
+            effect = self._cards[0].get_effect()
+        else:
+            effect = {}
+        self._can_fire = not self._can_fire
+        return effect
 
 
 def play_game(file: str) -> None:
