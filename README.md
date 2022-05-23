@@ -1,5 +1,8 @@
 # CSSE1001 Assignments
 
+[![Check python Formatting](https://github.com/keys-i/CSSE1001/actions/workflows/format.yml/badge.svg)](https://github.com/keys-i/CSSE1001/actions/workflows/format.yml)
+[![Check lint Formatting](https://github.com/keys-i/CSSE1001/actions/workflows/lint.yml/badge.svg)](https://github.com/keys-i/CSSE1001/actions/workflows/lint.yml)
+
 These are my assignments for CSSE1001 at UQ, Semester 1 2022.
 
 This repo is intended to be used **only as a reference**.
