@@ -21,6 +21,7 @@ from support import (
     SB_NAME,
     SG_SYMBOL,
     SHIELD,
+    shuffle_cards,
 )
 
 # Name: Radhesh Goel
@@ -32,6 +33,7 @@ from support import (
 # Write your classes and functions here
 
 COOL_SEP = ", "
+SHIP_SEP = ","
 
 
 class Card:
@@ -417,6 +419,228 @@ class HeavyLaser(HardPoint):
             effect = {}
         self._can_fire = not self._can_fire
         return effect
+
+
+class Ship:
+    """
+    An abstract ship containing armour, shield, heat, and hardpoints.
+    """
+
+    def __init__(self, armour: int, hardpoints: list[HardPoint]) -> None:
+        """
+        Initialise a Ship with the given armour and list of hardpoints.
+
+        Parameters:
+            armour (int): The ship's initial armour value.
+            hardpoints (list[HardPoint]): A list of hardpoints mounted
+            to the ship.
+        """
+        self._hardpoints = hardpoints
+        self._armour = armour
+        self._heat = 0
+        self._shield = 0
+
+    def __str__(self) -> str:
+        ship_part = SHIP_SEP.join(str(hp) for hp in self._hardpoints)
+        return f"{self._armour},{ship_part}"
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._armour}, {self._hardpoints})"
+
+    def get_hardpoints(self) -> list[HardPoint]:
+        """
+        Return the list of hardpoints on this ship.
+        """
+        return self._hardpoints
+
+    def get_armour(self) -> int:
+        """
+        Return the ship's current armour value.
+        """
+        return self._armour
+
+    def get_shield(self) -> int:
+        """
+        Return the ship's current shield value.
+        """
+        return self._shield
+
+    def get_heat(self) -> int:
+        """
+        Return the ship's current heat value.
+        """
+        return self._heat
+
+    def is_destroyed(self) -> bool:
+        """
+        Return whether the ship has been destroyed.
+        """
+        return self._armour <= 0
+
+    def apply_shield(self, shield_points: int) -> None:
+        """
+        Increase the ship's shield by the given amount.
+
+        Parameters:
+            shield_points (int): The amount of shield to apply.
+        """
+        self._shield += shield_points
+
+    def _shield_absorb(self, number: int) -> int:
+        """
+        Reduce shield by the given number and return leftover amount.
+
+        Parameters:
+            number (int): The value to be absorbed by the shield.
+
+        Returns:
+            int: Residual value that was not absorbed.
+        """
+        self._shield -= number
+        if self._shield < 0:
+            residual = -self._shield
+            self._shield = 0
+        else:
+            residual = 0
+        return residual
+
+    def apply_heat(self, heat: int) -> None:
+        """
+        Apply heat to the ship, reducing shield first if present.
+
+        Parameters:
+            heat (int): The heat to apply.
+        """
+        self._heat += self._shield_absorb(heat)
+
+    def apply_damage(self, damage: int, hardpoint: HardPoint) -> None:
+        """
+        Apply damage to the ship and a specified hardpoint.
+
+        Parameters:
+            damage (int): The amount of damage to apply.
+            hardpoint (HardPoint): The hardpoint to receive some of the damage.
+        """
+        remaining_damage = self._shield_absorb(damage)
+        to_hull = remaining_damage // 2
+        hardpoint.damage(remaining_damage - to_hull)
+        self._armour = max(self._armour - to_hull, 0)
+
+    def reset_status(self) -> None:
+        """
+        Reset the ship's shield and heat to 0, and repair all hardpoints.
+        """
+        self._heat = 0
+        self._shield = 0
+        for hardpoint in self._hardpoints:
+            hardpoint.repair()
+
+    def new_turn(self) -> None:
+        """
+        Update the ship at the start of a new turn.
+
+        - Repairs all non-functional hardpoints.
+        - Applies heat damage to armour.
+        - Decreases heat by 1.
+        - Halves shield (rounding down).
+        """
+        # Repair destroyed hardpoints
+        for hardpoint in self._hardpoints:
+            if not hardpoint.is_functional():
+                hardpoint.repair()
+
+        # Apply Heat
+        if self._heat > 0:
+            self._armour -= self._heat
+            if self._armour < 0:
+                self._armour = 0
+            self._heat -= 1
+
+        # Dissipitate shield
+        self._shield //= 2
+
+
+class Player(Ship):
+    """
+    A ship controlled by the player.
+
+    Player ships have an energy value used to play cards and
+    gain energy each turn based on the number of functional hardpoints.
+    """
+
+    def __init__(
+        self, armour: int, hardpoints: list[HardPoint], initial_energy: int
+    ) -> None:
+        """
+        Initialise a Player ship with given armour, hardpoints, and energy.
+
+        Parameters:
+            armour (int): The player's starting armour.
+            hardpoints (list[HardPoint]): The list of hardpoints on the ship.
+            initial_energy (int): The player's initial energy value.
+        """
+        super().__init__(armour, hardpoints)
+        self._energy = initial_energy
+
+    def __str__(self) -> str:
+        return super().__str__() + f"{SHIP_SEP}{self._energy}"
+
+    def __repr__(self) -> str:
+        return super().__repr__()[:-1] + f"{COOL_SEP}{self._energy})"
+
+    def build_deck(self) -> CardDeck:
+        """
+        Create and return a new shuffled deck using all cards
+        from functional hardpoints.
+        """
+        # Get availible cards
+        cards = []
+        for hardpoint in self._hardpoints:
+            cards += hardpoint.get_cards()
+
+        shuffle_cards(cards)
+        return CardDeck((card, 0) for card in cards)
+
+    def get_energy(self) -> int:
+        """
+        Return the player's current energy value.
+        """
+        return self._energy
+
+    def spend_energy(self, energy: int) -> bool:
+        """
+        Spend energy to play a card if enough energy is available.
+
+        Parameters:
+            energy (int): The amount of energy to spend.
+
+        Returns:
+            bool: True if energy was successfully spent, False otherwise.
+        """
+        if energy <= self._energy:
+            self._energy -= energy
+            return True
+        else:
+            return False
+
+    def new_turn(self):
+        for hardpoint in self._hardpoints:
+            if hardpoint.is_functional():
+                self._energy += 1
+
+        super().new_turn()
+
+
+class Enemy(Ship):
+    """
+    A ship controlled by the game AI.
+    """
+
+    def get_intents(self) -> list[tuple[HardPoint, str]]:
+        return [(hardpoint, hardpoint.enemy_intent()) for hardpoint in self._hardpoints]
+
+    def get_actions(self) -> list[dict[str, int]]:
+        return [hardpoint.enemy_action() for hardpoint in self._hardpoints]
 
 
 def play_game(file: str) -> None:
