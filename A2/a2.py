@@ -1,8 +1,19 @@
 # DO NOT modify or add any import statements
 from display import BreachView
 from support import (
+    BB_NAME,
+    BB_DESC,
     CARD_DESC,
     CARD_NAME,
+    DAMAGE,
+    HEAT,
+    LE_NAME,
+    LE_DESC,
+    RS_NAME,
+    RS_DESC,
+    SB_NAME,
+    SB_DESC,
+    SHIELD,
 )
 
 # Name: Radhesh Goel
@@ -17,7 +28,7 @@ class Card:
     An abstract card representing a basic action in the Breachway game.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._name = CARD_NAME
         self._desc = CARD_DESC
         self._cost = 1
@@ -54,6 +65,56 @@ class Card:
         """
         return self._effect
 
+class SmallBlast(Card):
+    """
+    A basic attack card that cost 1 energy, have 1 turn cooldown,
+    and deal 1 damage.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._name = SB_NAME
+        self._desc = SB_DESC
+        self._effect = {DAMAGE: 1}
+
+class BigBlast(Card):
+    """
+    A heavy attack card that cost 3 energy, have 4 turn cooldown,
+    deal 5 damage, and apply 3 heat.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self._name = BB_NAME
+        self._desc = BB_DESC
+        self._cost = 3
+        self._cooldown = 4
+        self._effect = {DAMAGE: 5, HEAT: 3}
+
+class RaiseShield(Card):
+    """
+    An advanced defensive card that cost 2 energy, have 3 turn cooldown,
+    apply 2 shield, and apply 2 heat.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self._name = RS_NAME
+        self._desc = RS_DESC
+        self._cost = 1
+        self._cooldown = 2
+        self._effect = { SHIELD: 5}
+
+class LeechEnergy(Card):
+    """
+    An advanced defensive card that cost 2 energy, have 3 turn cooldown,
+    apply 2 shield, and apply 2 heat.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self._name = LE_NAME
+        self._desc = LE_DESC
+        self._cost = 2
+        self._cooldown = 3
+        self._effect = { SHIELD: 2, HEAT: 2}
 
 def play_game(file: str) -> None:
     """
