@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - "A1/a1.py"
-
+      - "A2/a2.py"
 
 jobs:
   format:
@@ -21,7 +21,7 @@ jobs:
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v3
         with:
-            python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python-version }}
 
       - name: Cache pip packages
         uses: actions/cache@v3
