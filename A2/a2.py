@@ -1,4 +1,6 @@
 # DO NOT modify or add any import statements
+from typing import Optional
+
 from display import BreachView
 from support import (
     BB_DESC,
@@ -9,11 +11,11 @@ from support import (
     DESTROYED_INTENT,
     HARD_POINT_SYMBOL,
     HEAT,
-    MAX_HAND,
     HL_SYMBOL,
     LE_DESC,
     LE_NAME,
     LL_SYMBOL,
+    MAX_HAND,
     RECHARGING_INTENT,
     RECHARGING_SYMBOL,
     RS_DESC,
@@ -24,7 +26,6 @@ from support import (
     SHIELD,
     shuffle_cards,
 )
-from typing import Optional
 
 # Name: Radhesh Goel
 # Student Number: 49088276
@@ -838,6 +839,99 @@ class BreachModel:
         self.get_active_enemy().new_turn()
         self._deck.advance_cards()
         self._hand += self._deck.draw_cards(MAX_HAND - len(self._hand))
+
+
+class BreachWay:
+    """
+    The controller for the Breachway game.
+
+    Handles input/output, game loop flow, command parsing, and
+    communication between the model and the view.
+    """
+
+    def __init__(self, file: str) -> None:
+        """
+        Initialise the controller with a save file.
+
+        Parameters:
+            file (str): The path to the save file to load.
+        """
+        self._view = BreachView()
+        self._model = None  # Overridden immediately
+        self._file = file
+        self.load_game(file)
+
+    def __str__(self) -> str:
+        return CONTROLLER_DESC + self._file
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({self._file})"
+
+    def update_display(self, messages: list[str]) -> None:
+        """
+        Update the view to reflect current game state.
+
+        Parameters:
+            messages (list[str]): Messages to display to the user.
+        """
+        self._view.display_game(
+            self._model.get_player(),
+            self._model.get_active_enemy(),
+            self._model.get_hand(),
+            messages,
+        )
+
+    def get_command(self) -> str:
+        """
+        Get a valid command from the player.
+        """
+        command_valid = False
+        command = None
+        while not command_valid:
+            if not command == None:  # prevents message on first go
+                self.update_display([INVALID_COMMAND])
+
+            command = input(COMMAND_PROMPT)
+            if (
+                command.lower()
+                in [HELP_COMMAND, CHECK_COMMAND, END_TURN_COMMAND]
+                or command.split(" ")[0].lower() == LOAD_COMMAND
+            ):
+                command_valid = True
+
+            else:
+                # See if its a valid card command
+                parts = command.split(" ")
+                instruction = " ".join(parts[:-1])
+                if (
+                    instruction.lower() == PLAY_CARD_COMMAND
+                    and parts[-1].isdigit()
+                    and
+                    # Check index of card exists
+                    int(parts[-1]) - 1 in range(len(self._model.get_hand()))
+                ):
+                    command_valid = True
+
+        return command.lower()
+
+    def get_target_hardpoint(self) -> int:
+        """
+        Prompt the player to select a target hardpoint.
+        """
+        message = []
+        target = 0
+        while not target - 1 in range(
+            len(self._model.get_active_enemy().get_hardpoints())
+        ):
+            if message:  # prevents message on first go
+                self.update_display(message)
+
+            try:
+                target = int(input(HARDPOINT_PROMPT))
+                message = [INVALID_HARDPOINT]  # will be ignored if target valid
+            except ValueError:
+                message = [INVALID_INT]
+        return target - 1
 
 
 def play_game(file: str) -> None:
