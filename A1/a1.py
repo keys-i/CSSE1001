@@ -153,7 +153,11 @@ def place_guess(board: list[list[str]], guess: str, row: int) -> None:
         board[row][i] = parts[i]
 
 
-def place_feedback(board: list[list[str]], feedback: list[str], row: int) -> None:
+def place_feedback(
+    board: list[list[str]],
+    feedback: list[str],
+    row: int
+) -> None:
     """
     Places feedback into the feedback half of the given board state.
 

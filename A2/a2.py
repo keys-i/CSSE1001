@@ -9,6 +9,7 @@ from support import (
     DESTROYED_INTENT,
     HARD_POINT_SYMBOL,
     HEAT,
+    MAX_HAND,
     HL_SYMBOL,
     LE_DESC,
     LE_NAME,
@@ -23,6 +24,7 @@ from support import (
     SHIELD,
     shuffle_cards,
 )
+from typing import Optional
 
 # Name: Radhesh Goel
 # Student Number: 49088276
@@ -31,7 +33,8 @@ from support import (
 
 
 # Write your classes and functions here
-
+PLAYER_SEP = "|"
+ENEMY_SEP = ";"
 COOL_SEP = ", "
 SHIP_SEP = ","
 
@@ -143,7 +146,7 @@ class CardDeck:
     are ready to draw and which are still cooling down.
     """
 
-    def __init__(self, cards: list[tuple[Card, int]]):
+    def __init__(self, cards: list[tuple[Card, int]]) -> None:
         """
         Initialise a new CardDeck with the given cards and their cooldowns.
 
@@ -162,26 +165,30 @@ class CardDeck:
         """
         group = {}
         for card, cooldown in self._cards:
-            group.setdefault(cooldown, []).append(card)
+            if cooldown not in group:
+                group[cooldown] = [card]
+            else:
+                group[cooldown].append(card)
 
         return group
 
     def __str__(self) -> str:
         displays = []
         card_group = self._make_group()
-        lo_cooldown = min(card_group.keys())
-        hi_cooldown = max(card_group.keys())
+        lowest_cooldown = min(card_group.keys())
+        largest_cooldown = max(card_group.keys())
 
-        for cooldown in range(lo_cooldown, hi_cooldown + 1):
+        for cooldown in range(lowest_cooldown, largest_cooldown + 1):
             if cooldown not in card_group:
                 continue
 
-            card_names = [card.get_name() for card in card_group[cooldown]]
-            display = (
-                f"Ready: {COOL_SEP.join(card_names)}"
-                if cooldown == 0
-                else f"Cooldown {cooldown}: {COOL_SEP.join(card_names)}"
-            )
+            if cooldown == 0:
+                card_names = [card.get_name() for card in card_group[cooldown]]
+                display = f"Ready: {COOL_SEP.join(card_names)}"
+            else:
+                card_names = [card.get_name() for card in card_group[cooldown]]
+                display = f"Cooldown {cooldown}: {COOL_SEP.join(card_names)}"
+
             displays.append(display)
 
         return "; ".join(displays)
@@ -189,14 +196,16 @@ class CardDeck:
     def __repr__(self) -> str:
         displays = []
         card_group = self._make_group()
-        lo_cooldown = min(card_group.keys())
-        hi_cooldown = max(card_group.keys())
+        lowest_cooldown = min(card_group.keys())
+        largest_cooldown = max(card_group.keys())
 
-        for cooldown in range(lo_cooldown, hi_cooldown + 1):
+        for cooldown in range(lowest_cooldown, largest_cooldown + 1):
             if cooldown not in card_group:
                 continue
 
-            display = [f"({repr(card)}, {cooldown})" for card in card_group[cooldown]]
+            display = [
+                f"({repr(card)}, {cooldown})" for card in card_group[cooldown]
+            ]
             displays.append(", ".join(display))
 
         return f"{self.__class__.__name__}([{', '.join(displays)}])"
@@ -250,7 +259,8 @@ class CardDeck:
 class HardPoint:
     """
     An abstract hardpoint representing a component on a ship.
-    Hardpoints hold cards, take damage, and may perform actions for enemy ships.
+    Hardpoints hold cards, take damage, and may perform actions
+    for enemy ships.
     """
 
     def __init__(self) -> None:
@@ -637,10 +647,198 @@ class Enemy(Ship):
     """
 
     def get_intents(self) -> list[tuple[HardPoint, str]]:
-        return [(hardpoint, hardpoint.enemy_intent()) for hardpoint in self._hardpoints]
+        return [
+            (hardpoint, hardpoint.enemy_intent())
+            for hardpoint in self._hardpoints
+        ]
 
     def get_actions(self) -> list[dict[str, int]]:
         return [hardpoint.enemy_action() for hardpoint in self._hardpoints]
+
+
+class BreachModel:
+    """
+    The model representing the current state of a game of Breachway.
+
+    Tracks the player, enemies, card deck, hand, and manages game logic
+    such as card play, encounter state, and turn progression.
+    """
+
+    def __init__(self, player: Player, enemies: list[Enemy]) -> None:
+        """
+        Initialise the BreachModel with the player and list of enemies.
+
+        Parameters:
+            player (Player): The player's ship.
+            enemies (list[Enemy]): A list of enemies to fight in order.
+        """
+        self._player = player
+        self._enemies = enemies
+        self._active_enemy = -1
+        self._deck = None
+        self._hand = []
+
+    def __str__(self) -> str:
+        enemy_part = ENEMY_SEP.join(str(enemy) for enemy in self._enemies)
+        return f"{str(self._player)}{PLAYER_SEP}{enemy_part}"
+
+    def __repr__(self) -> str:
+        return "{}({!r}, {!r})".format(
+            self.__class__.__name__,
+            self._player,
+            self._enemies,
+        )
+
+    def get_player(self) -> Player:
+        """
+        Return the player object.
+        """
+        return self._player
+
+    def get_active_enemy(self) -> Optional[Enemy]:
+        """
+        Return the enemy currently being fought.
+        """
+        return (
+            self._enemies[self._active_enemy]
+            if self._active_enemy >= 0
+            else None
+        )
+
+    def get_deck(self) -> Optional[CardDeck]:
+        """
+        Return the current card deck.
+        """
+        return self._deck
+
+    def get_hand(self) -> list[Card]:
+        """
+        Return the current hand of cards.
+        """
+        return self._hand
+
+    def get_enemies(self) -> list[Enemy]:
+        """
+        Return the list of all enemies.
+        """
+        return self._enemies
+
+    def get_remaining_enemy_count(self) -> int:
+        """
+        Return the number of enemies that are not destroyed.
+        """
+        return sum(not enemy.is_destroyed() for enemy in self._enemies)
+
+    def has_won(self) -> bool:
+        """
+        Return True if the player has defeated all enemies.
+        """
+        return (
+            self.get_remaining_enemy_count() <= 0
+            and not self._player.is_destroyed()
+        )
+
+    def has_lost(self) -> bool:
+        """
+        Return True if the player's ship is destroyed.
+        """
+        return self._player.is_destroyed()
+
+    def new_encounter(self) -> None:
+        """
+        Start a new encounter with the next undefeated enemy.
+
+        Resets player shield/heat, repairs hardpoints,
+        builds a new deck, and draws an initial hand.
+        """
+        # Get first alive enemy
+        self._active_enemy = 0
+        for enemy in self._enemies:
+            if not enemy.is_destroyed():
+                break
+            self._active_enemy += 1
+
+        self._player.reset_status()
+        self._deck = self._player.build_deck()
+        self._hand = self._deck.draw_cards(MAX_HAND)
+
+    def encounter_ongoing(self) -> bool:
+        """
+        Return whether the current encounter is ongoing.
+        """
+        opponent = self.get_active_enemy()
+        if not opponent:
+            return False
+        else:
+            return not (opponent.is_destroyed() or self._player.is_destroyed())
+
+    def play_card(self, card: Card, target_hardpoint: HardPoint) -> bool:
+        """
+        Attempt to play a card, applying its effects.
+
+        Parameters:
+            card (Card): The card to play.
+            target_hardpoint (HardPoint): The hardpoint to apply damage to.
+
+        Returns:
+            bool: True if the card was successfully played.
+        """
+        success = self._player.spend_energy(card.get_cost())
+        if success:
+            # remove card from hand
+            new_hand = []
+            removal_accomplished = False
+            for existing_card in self._hand:
+                if existing_card == card and not removal_accomplished:
+                    removal_accomplished = True
+                else:
+                    new_hand.append(existing_card)
+            self._hand = new_hand
+
+            # apply effects
+            action = card.get_effect()
+            self._player.apply_shield(action.get(SHIELD, 0))
+            self.get_active_enemy().apply_heat(action.get(HEAT, 0))
+            if DAMAGE in action:
+                self.get_active_enemy().apply_damage(
+                    action[DAMAGE],
+                    target_hardpoint
+                )
+
+            # Send card to cooldown
+            self._deck.add_card(card)
+
+        return success
+
+    def end_turn(self) -> None:
+        """
+        End the player's turn and trigger the enemy's response.
+        Enemy plays cards, effects resolve, and a new turn begins.
+        """
+        # take enemy turn
+        for action in self.get_active_enemy().get_actions():
+            self.get_active_enemy().apply_shield(action.get(SHIELD, 0))
+            self._player.apply_heat(action.get(HEAT, 0))
+
+            if DAMAGE in action:
+                # AI always targets hardpoint with lowest health (tie early)
+                min_health = min(
+                    hardpoint.get_armour()
+                    for hardpoint in self._player.get_hardpoints()
+                    if hardpoint.is_functional()
+                )
+                target = self._player.get_hardpoints()[-1]
+                for hardpoint in self._player.get_hardpoints():
+                    if hardpoint.get_armour() == min_health:
+                        target = hardpoint
+                        break
+                self._player.apply_damage(action[DAMAGE], target)
+
+        # Begin new turn
+        self._player.new_turn()
+        self.get_active_enemy().new_turn()
+        self._deck.advance_cards()
+        self._hand += self._deck.draw_cards(MAX_HAND - len(self._hand))
 
 
 def play_game(file: str) -> None:
