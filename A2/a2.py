@@ -801,8 +801,7 @@ class BreachModel:
             self.get_active_enemy().apply_heat(action.get(HEAT, 0))
             if DAMAGE in action:
                 self.get_active_enemy().apply_damage(
-                    action[DAMAGE],
-                    target_hardpoint
+                    action[DAMAGE], target_hardpoint
                 )
 
             # Send card to cooldown

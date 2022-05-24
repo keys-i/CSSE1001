@@ -274,7 +274,8 @@ class VSplitDisplay(TextDisplayElement):
             return self._fixwidth
         else:
             return max(
-                (component.get_width() for component in self._components), default=0
+                (component.get_width() for component in self._components),
+                default=0,
             )
 
     def get_height(self) -> int:
@@ -284,7 +285,9 @@ class VSplitDisplay(TextDisplayElement):
         if self._fixheight:
             return self._fixheight
         else:
-            return sum((component.get_height() for component in self._components))
+            return sum(
+                (component.get_height() for component in self._components)
+            )
 
     def render(self):
         """
@@ -351,7 +354,9 @@ class HSplitDisplay(TextDisplayElement):
         if self._fixwidth:
             return self._fixwidth
         else:
-            return sum((component.get_width() for component in self._components))
+            return sum(
+                (component.get_width() for component in self._components)
+            )
 
     def get_height(self) -> int:
         """
@@ -361,7 +366,8 @@ class HSplitDisplay(TextDisplayElement):
             return self._fixheight
         else:
             return max(
-                (component.get_height() for component in self._components), default=0
+                (component.get_height() for component in self._components),
+                default=0,
             )
 
     def render(self):
@@ -380,7 +386,9 @@ class HSplitDisplay(TextDisplayElement):
             if self._vjust == self.VJUST_TOP:
                 new_content += [" " * component.get_width()] * vdiff
             elif self._vjust == self.VJUST_BOTTOM:
-                new_content = [" " * component.get_width()] * vdiff + new_content
+                new_content = [
+                    " " * component.get_width()
+                ] * vdiff + new_content
             elif self._vjust == self.VJUST_CENTER:
                 tpad = vdiff // 2
                 bpad = vdiff - tpad
@@ -594,7 +602,8 @@ class StatBar(HSplitDisplay):
         super().__init__(
             [
                 BaseDisplay(
-                    width=ShipDisplay.SHIP_CELLS_WIDE * ShipDisplay.SHIP_CELL_SIZE,
+                    width=ShipDisplay.SHIP_CELLS_WIDE
+                    * ShipDisplay.SHIP_CELL_SIZE,
                     height=self.STAT_HEIGHT,
                     vjust=TextDisplayElement.VJUST_BOTTOM,
                 ),
@@ -604,7 +613,8 @@ class StatBar(HSplitDisplay):
                     height=self.STAT_HEIGHT,
                 ),
                 BaseDisplay(
-                    width=ShipDisplay.SHIP_CELLS_WIDE * ShipDisplay.SHIP_CELL_SIZE,
+                    width=ShipDisplay.SHIP_CELLS_WIDE
+                    * ShipDisplay.SHIP_CELL_SIZE,
                     height=self.STAT_HEIGHT,
                     vjust=TextDisplayElement.VJUST_BOTTOM,
                 ),
@@ -612,7 +622,11 @@ class StatBar(HSplitDisplay):
                     height=self.STAT_HEIGHT,
                     width=width
                     - (
-                        2 * (ShipDisplay.SHIP_CELLS_WIDE * ShipDisplay.SHIP_CELL_SIZE)
+                        2
+                        * (
+                            ShipDisplay.SHIP_CELLS_WIDE
+                            * ShipDisplay.SHIP_CELL_SIZE
+                        )
                         + 1
                     ),
                     vjust=TextDisplayElement.VJUST_BOTTOM,
@@ -655,7 +669,9 @@ class StatBar(HSplitDisplay):
         )
 
         # Display enemy ship stats:
-        self[2].set_content([f"A:{enemy_armour}", f"S:{enemy_shield} H:{enemy_heat}"])
+        self[2].set_content(
+            [f"A:{enemy_armour}", f"S:{enemy_shield} H:{enemy_heat}"]
+        )
 
         # Display energy
         self[3].set_content([self.REACTOR_STRING, str(player_energy)])
@@ -705,7 +721,9 @@ class EncounterDisplay(VSplitDisplay):
         self[0][2].set_ship([intent[0] for intent in e_intents])
         self[0][3].components().clear()
         # Buffer for nose cone
-        self[0][3].components().append(BaseDisplay(height=ShipDisplay.SHIP_CELL_SIZE))
+        self[0][3].components().append(
+            BaseDisplay(height=ShipDisplay.SHIP_CELL_SIZE)
+        )
 
         for intent in e_intents:
             self[0][3].components().append(
@@ -753,7 +771,9 @@ class CardDisplay(VSplitDisplay):
         super().__init__(
             [
                 BaseDisplay([], width=self.CARD_WIDTH + 2, height=1),
-                BaseDisplay(self.CARD_HBORDER, width=self.CARD_WIDTH + 2, height=1),
+                BaseDisplay(
+                    self.CARD_HBORDER, width=self.CARD_WIDTH + 2, height=1
+                ),
                 HSplitDisplay(
                     [
                         BaseDisplay(
@@ -769,7 +789,9 @@ class CardDisplay(VSplitDisplay):
                         ),
                     ]
                 ),
-                BaseDisplay(self.CARD_HBORDER, width=self.CARD_WIDTH + 2, height=1),
+                BaseDisplay(
+                    self.CARD_HBORDER, width=self.CARD_WIDTH + 2, height=1
+                ),
             ],
             width=self.CARD_WIDTH + 2 + padding,
             height=self.CARD_HEIGHT + 3,

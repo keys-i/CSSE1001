@@ -47,7 +47,9 @@ LOAD_COMMAND = "load"
 COMMAND_PROMPT = "Please enter command (or Help to see valid commands): "
 HARDPOINT_PROMPT = "Please enter target hardpoint number: "
 
-INVALID_COMMAND = "Invalid command! Enter 'Help' to see a list of valid" " commands."
+INVALID_COMMAND = (
+    "Invalid command! Enter 'Help' to see a list of valid" " commands."
+)
 INVALID_HARDPOINT = "Invalid target."
 INVALID_INT = "Please enter an integer."
 
