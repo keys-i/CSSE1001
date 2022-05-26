@@ -7,23 +7,52 @@ from support import (
     BB_NAME,
     CARD_DESC,
     CARD_NAME,
+    CHECK_COMMAND,
+    COMMAND_PROMPT,
+    CONTROLLER_DESC,
+    CORRPUT_FILE,
+    CORRPUT_HARDPOINT,
+    CORRUPT_ARMOUR,
+    CORRUPT_ENEMY_COUNT,
+    CORRUPT_ENERGY,
+    CORRUPT_HARDPOINT_COUNT,
     DAMAGE,
     DESTROYED_INTENT,
+    ENCOUNTER_MESSAGE,
+    ENCOUNTER_WIN_MESSAGE,
+    END_TURN_COMMAND,
+    ENEMY_ACTION_MESSAGE,
     HARD_POINT_SYMBOL,
+    HARDPOINT_PROMPT,
     HEAT,
+    HELP_COMMAND,
+    HELP_MESSAGES,
     HL_SYMBOL,
+    INVALID_COMMAND,
+    INVALID_HARDPOINT,
+    INVALID_INT,
     LE_DESC,
     LE_NAME,
     LL_SYMBOL,
+    LOAD_COMMAND,
+    LOSS_MESSAGE,
     MAX_HAND,
+    NO_ENERGY_MESSAGE,
+    NO_FILE,
+    PLAY_CARD_COMMAND,
+    PLAYER_COUNT_CORRUPT,
     RECHARGING_INTENT,
     RECHARGING_SYMBOL,
     RS_DESC,
     RS_NAME,
+    SAVE_LOC,
     SB_DESC,
     SB_NAME,
     SG_SYMBOL,
     SHIELD,
+    TURN_END_MESSAGE,
+    WELCOME_MESSAGE,
+    WIN_MESSAGE,
     shuffle_cards,
 )
 
@@ -32,10 +61,10 @@ from support import (
 # Favorite Building: GP South
 # -----------------------------------------------------------------------------
 
-
 # Write your classes and functions here
 PLAYER_SEP = "|"
 ENEMY_SEP = ";"
+DECK_SEP = "; "
 COOL_SEP = ", "
 SHIP_SEP = ","
 
@@ -268,7 +297,7 @@ class HardPoint:
         """
         Initialise a HardPoint with 1 armour and a SmallBlast card.
         """
-        self._cards = [SmallBlast()]
+        self._cards: list[Card] = [SmallBlast()]
         self._max_health = 1
         self._health = self._max_health
         self._enemy_card_no = 0
@@ -605,12 +634,12 @@ class Player(Ship):
         from functional hardpoints.
         """
         # Get availible cards
-        cards = []
+        cards: list[Card] = []
         for hardpoint in self._hardpoints:
             cards += hardpoint.get_cards()
 
         shuffle_cards(cards)
-        return CardDeck((card, 0) for card in cards)
+        return CardDeck([(card, 0) for card in cards])
 
     def get_energy(self) -> int:
         """
@@ -634,7 +663,7 @@ class Player(Ship):
         else:
             return False
 
-    def new_turn(self):
+    def new_turn(self) -> None:
         for hardpoint in self._hardpoints:
             if hardpoint.is_functional():
                 self._energy += 1
@@ -676,7 +705,7 @@ class BreachModel:
         self._player = player
         self._enemies = enemies
         self._active_enemy = -1
-        self._deck = None
+        self._deck: Optional[CardDeck] = None
         self._hand = []
 
     def __str__(self) -> str:
@@ -761,7 +790,7 @@ class BreachModel:
 
         self._player.reset_status()
         self._deck = self._player.build_deck()
-        self._hand = self._deck.draw_cards(MAX_HAND)
+        self._hand: list[Card] = self._deck.draw_cards(MAX_HAND)
 
     def encounter_ongoing(self) -> bool:
         """
@@ -776,13 +805,6 @@ class BreachModel:
     def play_card(self, card: Card, target_hardpoint: HardPoint) -> bool:
         """
         Attempt to play a card, applying its effects.
-
-        Parameters:
-            card (Card): The card to play.
-            target_hardpoint (HardPoint): The hardpoint to apply damage to.
-
-        Returns:
-            bool: True if the card was successfully played.
         """
         success = self._player.spend_energy(card.get_cost())
         if success:
@@ -796,16 +818,18 @@ class BreachModel:
                     new_hand.append(existing_card)
             self._hand = new_hand
 
+            opponent = self.get_active_enemy()
+            assert opponent is not None
+
             # apply effects
             action = card.get_effect()
             self._player.apply_shield(action.get(SHIELD, 0))
-            self.get_active_enemy().apply_heat(action.get(HEAT, 0))
+            opponent.apply_heat(action.get(HEAT, 0))
             if DAMAGE in action:
-                self.get_active_enemy().apply_damage(
-                    action[DAMAGE], target_hardpoint
-                )
+                opponent.apply_damage(action[DAMAGE], target_hardpoint)
 
             # Send card to cooldown
+            assert self._deck is not None
             self._deck.add_card(card)
 
         return success
@@ -815,9 +839,11 @@ class BreachModel:
         End the player's turn and trigger the enemy's response.
         Enemy plays cards, effects resolve, and a new turn begins.
         """
-        # take enemy turn
-        for action in self.get_active_enemy().get_actions():
-            self.get_active_enemy().apply_shield(action.get(SHIELD, 0))
+        opponent = self.get_active_enemy()
+        assert opponent is not None
+
+        for action in opponent.get_actions():
+            opponent.apply_shield(action.get(SHIELD, 0))
             self._player.apply_heat(action.get(HEAT, 0))
 
             if DAMAGE in action:
@@ -836,7 +862,9 @@ class BreachModel:
 
         # Begin new turn
         self._player.new_turn()
-        self.get_active_enemy().new_turn()
+        opponent.new_turn()
+
+        assert self._deck is not None
         self._deck.advance_cards()
         self._hand += self._deck.draw_cards(MAX_HAND - len(self._hand))
 
@@ -857,7 +885,7 @@ class BreachWay:
             file (str): The path to the save file to load.
         """
         self._view = BreachView()
-        self._model = None  # Overridden immediately
+        self._model: BreachModel  # Overridden immediately
         self._file = file
         self.load_game(file)
 
@@ -886,12 +914,16 @@ class BreachWay:
         Get a valid command from the player.
         """
         command_valid = False
-        command = None
+        command: str = ""
+        first_prompt = True
+
         while not command_valid:
-            if not command == None:  # prevents message on first go
+            if not first_prompt:  # prevents message on first go
                 self.update_display([INVALID_COMMAND])
 
             command = input(COMMAND_PROMPT)
+            first_prompt = False
+
             if (
                 command.lower()
                 in [HELP_COMMAND, CHECK_COMMAND, END_TURN_COMMAND]
@@ -906,9 +938,8 @@ class BreachWay:
                 if (
                     instruction.lower() == PLAY_CARD_COMMAND
                     and parts[-1].isdigit()
-                    and
-                    # Check index of card exists
-                    int(parts[-1]) - 1 in range(len(self._model.get_hand()))
+                    and int(parts[-1]) - 1
+                    in range(len(self._model.get_hand()))
                 ):
                     command_valid = True
 
@@ -918,20 +949,176 @@ class BreachWay:
         """
         Prompt the player to select a target hardpoint.
         """
-        message = []
+        message: list[str] = []
         target = 0
-        while not target - 1 in range(
-            len(self._model.get_active_enemy().get_hardpoints())
-        ):
+
+        enemy = self._model.get_active_enemy()
+        assert enemy is not None
+
+        while target - 1 not in range(len(enemy.get_hardpoints())):
             if message:  # prevents message on first go
                 self.update_display(message)
 
             try:
                 target = int(input(HARDPOINT_PROMPT))
-                message = [INVALID_HARDPOINT]  # will be ignored if target valid
+                message = [
+                    INVALID_HARDPOINT
+                ]  # will be ignored if target valid
             except ValueError:
                 message = [INVALID_INT]
         return target - 1
+
+    def save_game(self) -> None:
+        """
+        Save the current game state to the default save location.
+        """
+        with open(SAVE_LOC, "w") as f:
+            f.write(str(self._model))
+
+    def load_game(self, file) -> None:
+        """
+        Load a game from the specified save file.
+
+        Parameters:
+            file (str): The path to the save file.
+        """
+        VALID_HARDPOINTS = {  # Maps symbols to constructors
+            HARD_POINT_SYMBOL: HardPoint,
+            LL_SYMBOL: LightLaser,
+            HL_SYMBOL: lambda: HeavyLaser(True),  # Yes, I am being cheeky
+            RECHARGING_SYMBOL: lambda: HeavyLaser(False),
+            SG_SYMBOL: ShieldGenerator,
+        }
+
+        # Get model string
+        with open(file, "r") as f:
+            model = f.read().split("\n")[0]  # Ignore after first line
+
+        # Check corrrect format
+        separated = model.split(PLAYER_SEP)
+        if not len(separated) == 2:
+            raise ValueError(PLAYER_COUNT_CORRUPT)
+        player, enemies = separated
+
+        # Check player is valid format
+        player_params = player.split(SHIP_SEP)
+        player_armour, player_hardpoints, player_energy = (
+            player_params[0],
+            player_params[1:-1],
+            player_params[-1],
+        )
+        if not (player_armour.isdigit() and int(player_armour) >= 0):
+            raise ValueError(CORRUPT_ARMOUR)
+        if not (player_energy.isdigit() and int(player_energy) >= 0):
+            raise ValueError(CORRUPT_ENERGY)
+        if len(player_hardpoints) <= 0:
+            raise ValueError(CORRUPT_HARDPOINT_COUNT)
+        for hardpoint in player_hardpoints:
+            if hardpoint not in VALID_HARDPOINTS:
+                raise ValueError(CORRPUT_HARDPOINT)
+
+        # Generate player
+        validated_player = Player(
+            int(player_armour),
+            [VALID_HARDPOINTS[hp]() for hp in player_hardpoints],
+            int(player_energy),
+        )
+
+        # Check enemies are in valid format
+        if not enemies:
+            raise ValueError(CORRUPT_ENEMY_COUNT)
+        enemies_to_validate = enemies.split(ENEMY_SEP)
+        validated_enemies = []
+        for enemy in enemies_to_validate:
+            enemy_params = enemy.split(SHIP_SEP)
+            enemy_armour, enemy_hardpoints = (
+                enemy_params[0],
+                enemy_params[1:],
+            )
+            if not (enemy_armour.isdigit() and int(enemy_armour) >= 0):
+                raise ValueError(CORRUPT_ARMOUR)
+            for hardpoint in enemy_hardpoints:
+                if hardpoint not in VALID_HARDPOINTS:
+                    raise ValueError(CORRPUT_HARDPOINT)
+
+            # may as well construct enemy while we are here
+            validated_enemies.append(
+                Enemy(
+                    int(enemy_armour),
+                    [VALID_HARDPOINTS[hp]() for hp in enemy_hardpoints],
+                )
+            )
+
+        # If we reached here with no errors, everything is bing chilling
+        self._model = BreachModel(validated_player, validated_enemies)
+
+    def play(self) -> None:
+        """
+        Start the main game loop, running until the player wins or loses.
+        """
+        messages = [WELCOME_MESSAGE]
+        while not (self._model.has_won() or self._model.has_lost()):
+            self.save_game()
+            self._model.new_encounter()
+            messages += [
+                ENCOUNTER_MESSAGE,
+                f"{self._model.get_remaining_enemy_count()} enemies remain...",
+            ]
+
+            while self._model.encounter_ongoing():
+                self.update_display(messages)
+                messages = []
+                command = self.get_command()
+                if command == HELP_COMMAND:
+                    messages += HELP_MESSAGES
+                elif command == CHECK_COMMAND:
+                    messages += str(self._model.get_deck()).split(DECK_SEP)
+                elif command == END_TURN_COMMAND:
+                    self._model.end_turn()
+                    messages += [TURN_END_MESSAGE, ENEMY_ACTION_MESSAGE]
+                else:
+                    # Check for piecewise commands
+                    split_command = command.split(" ")
+                    if split_command[0] == LOAD_COMMAND:
+                        new_file = split_command[1]
+                        try:
+                            self.load_game(new_file)
+                            self._model.new_encounter()
+                            messages.append("Loaded " + new_file)
+                        except ValueError as e:
+                            messages.append(CORRPUT_FILE + str(e))
+                        except FileNotFoundError:
+                            messages.append(NO_FILE + new_file)
+                    else:
+                        # command is a play command
+                        card = self._model.get_hand()[
+                            int(split_command[-1]) - 1
+                        ]
+                        target_hardpoint = HardPoint()  # dummy if not required
+                        if DAMAGE in card.get_effect():
+                            enemy = self._model.get_active_enemy()
+                            assert enemy is not None
+                            target_hardpoint = enemy.get_hardpoints()[
+                                self.get_target_hardpoint()
+                            ]
+
+                        success = self._model.play_card(card, target_hardpoint)
+                        if success:
+                            messages.append(f"Played {card.get_name()}.")
+                        else:
+                            messages.append(NO_ENERGY_MESSAGE)
+                enemy = self._model.get_active_enemy()
+                assert enemy is not None
+
+                if enemy.is_destroyed():
+                    messages.append(ENCOUNTER_WIN_MESSAGE)
+
+        if self._model.has_won():
+            messages.append(WIN_MESSAGE)
+        elif self._model.has_lost():
+            messages.append(LOSS_MESSAGE)
+
+        self.update_display(messages)
 
 
 def play_game(file: str) -> None:
@@ -945,8 +1132,8 @@ def play_game(file: str) -> None:
         file (str): The path to the save file to load.
     """
     try:
-        with open(file, "r", encoding="utf-8") as f:
-            print(f"Loaded save file: {f}")
+        game = BreachWay(file)
+        game.play()
     except ValueError as err:
         print(f"{file} is malformatted: {str(err)}")
     except FileNotFoundError:

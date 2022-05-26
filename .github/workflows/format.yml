@@ -37,4 +37,4 @@ jobs:
           pip install black==22.10.0
 
       - name: Run black (check only)
-        run: black --check --line-length 80 .
+        run: black --check --line-length 79 .
